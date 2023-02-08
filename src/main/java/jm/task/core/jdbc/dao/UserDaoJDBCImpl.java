@@ -23,7 +23,7 @@ public class UserDaoJDBCImpl implements UserDao {
             statement.executeUpdate(sql);
             System.out.println("ok");
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
