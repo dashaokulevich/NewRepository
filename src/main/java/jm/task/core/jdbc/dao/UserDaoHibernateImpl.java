@@ -7,6 +7,7 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import org.hibernate.resource.transaction.spi.TransactionStatus;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,15 +20,24 @@ public class UserDaoHibernateImpl implements UserDao {
 
     @Override
     public void createUsersTable() {
-        Session session = Util.getSession();
-        session.beginTransaction();
-        String sql = "CREATE TABLE IF NOT EXISTS User " +
-                "(id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
-                "name VARCHAR(32) NOT NULL, lastName VARCHAR(32) NOT NULL, " +
-                "age TINYINT NOT NULL)";
-        session.createSQLQuery(sql).executeUpdate();
-        session.getTransaction().commit();
-        session.close();
+        Transaction transaction = null;
+        try (Session session = Util.getSession()) {
+            transaction = session.getTransaction();
+            if (transaction.getStatus().equals(TransactionStatus.NOT_ACTIVE)) {
+                transaction.begin();
+            }
+            String sql = "CREATE TABLE IF NOT EXISTS User " +
+                    "(id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
+                    "name VARCHAR(32) NOT NULL, lastName VARCHAR(32) NOT NULL, " +
+                    "age TINYINT NOT NULL)";
+            session.createSQLQuery(sql).executeUpdate();
+            transaction.commit();
+        } catch (HibernateException e) {
+            e.printStackTrace();
+            if (transaction != null) {
+                transaction.rollback();
+            }
+        }
     }
 
     @Override
